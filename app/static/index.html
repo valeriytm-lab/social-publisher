@@ -415,12 +415,6 @@
         // Platform toggles
         document.querySelectorAll('.platform-toggle').forEach(el => {
             const cb = el.querySelector('input');
-            el.addEventListener('click', e => {
-                if (e.target === cb) return;
-                cb.checked = !cb.checked;
-                el.classList.toggle('active', cb.checked);
-                updateYouTubeSection();
-            });
             cb.addEventListener('change', () => {
                 el.classList.toggle('active', cb.checked);
                 updateYouTubeSection();
