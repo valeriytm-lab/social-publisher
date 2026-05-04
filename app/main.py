@@ -48,10 +48,16 @@ async def status() -> dict[str, object]:
 async def publish(
     text: str = Form(""),
     platforms: str = Form("telegram,facebook_page,facebook_group,youtube"),
+    fb_title: str = Form(""),  # noqa: B008
+    fb_description: str = Form(""),  # noqa: B008
+    fb_comment: str = Form(""),  # noqa: B008
     youtube_title: str = Form(""),
     youtube_description: str = Form(""),
     youtube_tags: str = Form(""),
     youtube_privacy: str = Form("public"),
+    youtube_playlist: str = Form(""),
+    youtube_made_for_kids: str = Form("false"),
+    youtube_comment: str = Form(""),
     images: list[UploadFile] = File(default=[]),  # noqa: B008
     video: UploadFile | None = File(default=None),  # noqa: B008
 ) -> dict[str, list[PublishResult]]:
@@ -60,10 +66,16 @@ async def publish(
     req = PublishRequest(
         text=text,
         platforms=platform_list,
+        fb_title=fb_title,
+        fb_description=fb_description,
+        fb_comment=fb_comment,
         youtube_title=youtube_title,
         youtube_description=youtube_description,
         youtube_tags=[t.strip() for t in youtube_tags.split(",") if t.strip()],
         youtube_privacy=youtube_privacy,
+        youtube_playlist=youtube_playlist,
+        youtube_made_for_kids=youtube_made_for_kids.lower() == "true",
+        youtube_comment=youtube_comment,
     )
 
     # Save uploaded files
@@ -104,6 +116,15 @@ async def publish(
                 "youtube_description": req.youtube_description,
                 "youtube_tags": req.youtube_tags,
                 "youtube_privacy": req.youtube_privacy,
+                "youtube_playlist": req.youtube_playlist,
+                "youtube_made_for_kids": req.youtube_made_for_kids,
+                "youtube_comment": req.youtube_comment,
+            }
+        if name in ("facebook_page", "facebook_group"):
+            extra_kwargs = {
+                "fb_title": req.fb_title,
+                "fb_description": req.fb_description,
+                "fb_comment": req.fb_comment,
             }
         tasks.append(
             publisher.publish(

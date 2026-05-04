@@ -9,6 +9,8 @@ from app.publishers.base import BasePublisher
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos"
+PLAYLIST_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
+COMMENT_URL = "https://www.googleapis.com/youtube/v3/commentThreads"
 
 
 class YouTubePublisher(BasePublisher):
@@ -60,6 +62,9 @@ class YouTubePublisher(BasePublisher):
         if not isinstance(tags, list):
             tags = []
         privacy = str(kwargs.get("youtube_privacy", "public"))
+        playlist_id = str(kwargs.get("youtube_playlist", ""))
+        made_for_kids = bool(kwargs.get("youtube_made_for_kids", False))
+        comment_text = str(kwargs.get("youtube_comment", ""))
 
         try:
             async with httpx.AsyncClient(timeout=300) as client:
@@ -71,9 +76,25 @@ class YouTubePublisher(BasePublisher):
                         message="Не удалось получить access token для YouTube.",
                     )
 
-                return await self._upload_video(
-                    client, access_token, video, title, description, tags, privacy
+                result = await self._upload_video(
+                    client, access_token, video, title, description,
+                    tags, privacy, made_for_kids,
                 )
+
+                if result.success and result.url:
+                    video_id = result.url.split("v=")[-1]
+
+                    if playlist_id:
+                        await self._add_to_playlist(
+                            client, access_token, video_id, playlist_id,
+                        )
+
+                    if comment_text:
+                        await self._add_comment(
+                            client, access_token, video_id, comment_text,
+                        )
+
+                return result
         except httpx.HTTPError as e:
             return PublishResult(
                 platform="youtube", success=False, message=f"Ошибка HTTP: {e}"
@@ -88,6 +109,7 @@ class YouTubePublisher(BasePublisher):
         description: str,
         tags: list[str],
         privacy: str,
+        made_for_kids: bool,
     ) -> PublishResult:
         metadata = {
             "snippet": {
@@ -96,7 +118,10 @@ class YouTubePublisher(BasePublisher):
                 "tags": tags,
                 "categoryId": "22",
             },
-            "status": {"privacyStatus": privacy},
+            "status": {
+                "privacyStatus": privacy,
+                "selfDeclaredMadeForKids": made_for_kids,
+            },
         }
 
         # Resumable upload: init
@@ -151,4 +176,55 @@ class YouTubePublisher(BasePublisher):
             platform="youtube",
             success=False,
             message=f"Ошибка загрузки видео: {upload_resp.status_code} {upload_resp.text}",
+        )
+
+    async def _add_to_playlist(
+        self,
+        client: httpx.AsyncClient,
+        access_token: str,
+        video_id: str,
+        playlist_id: str,
+    ) -> None:
+        body = {
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": video_id,
+                },
+            }
+        }
+        await client.post(
+            f"{PLAYLIST_URL}?part=snippet",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            content=json.dumps(body),
+        )
+
+    async def _add_comment(
+        self,
+        client: httpx.AsyncClient,
+        access_token: str,
+        video_id: str,
+        comment_text: str,
+    ) -> None:
+        body = {
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": comment_text,
+                    }
+                },
+            }
+        }
+        await client.post(
+            f"{COMMENT_URL}?part=snippet",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            content=json.dumps(body),
         )

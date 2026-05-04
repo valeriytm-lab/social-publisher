@@ -291,12 +291,66 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .youtube-section {
+        .youtube-section, .facebook-section {
             display: none;
         }
 
-        .youtube-section.visible {
+        .youtube-section.visible, .facebook-section.visible {
             display: block;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text);
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: var(--text);
         }
 
         @media (max-width: 600px) {
@@ -375,6 +429,23 @@
                 </div>
             </div>
 
+            <!-- Facebook Page settings -->
+            <div class="card facebook-section" id="facebookSection">
+                <h2>Настройки Facebook</h2>
+                <div class="form-group">
+                    <label>Название (для видео)</label>
+                    <input type="text" id="fbTitle" name="fb_title" placeholder="Название видео для Facebook">
+                </div>
+                <div class="form-group">
+                    <label>Описание (для видео)</label>
+                    <textarea id="fbDescription" name="fb_description" placeholder="Описание (если пусто — используется текст поста)" style="min-height:60px"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Первый комментарий</label>
+                    <input type="text" id="fbComment" name="fb_comment" placeholder="Текст комментария к посту (необязательно)">
+                </div>
+            </div>
+
             <!-- YouTube settings -->
             <div class="card youtube-section" id="youtubeSection">
                 <h2>Настройки YouTube</h2>
@@ -400,6 +471,23 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Плейлист (ID)</label>
+                    <input type="text" id="youtubePlaylist" name="youtube_playlist" placeholder="ID плейлиста (например PLxxxxxxx)">
+                </div>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="youtubeMadeForKids">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Изменённый контент (для детей)</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Первый комментарий</label>
+                    <input type="text" id="youtubeComment" name="youtube_comment" placeholder="Текст комментария к видео (необязательно)">
+                </div>
             </div>
 
             <!-- Submit -->
@@ -418,12 +506,19 @@
             cb.addEventListener('change', () => {
                 el.classList.toggle('active', cb.checked);
                 updateYouTubeSection();
+                updateFacebookSection();
             });
         });
 
         function updateYouTubeSection() {
             const ytChecked = document.querySelector('input[value="youtube"]').checked;
             document.getElementById('youtubeSection').classList.toggle('visible', ytChecked);
+        }
+
+        function updateFacebookSection() {
+            const fpChecked = document.querySelector('input[value="facebook_page"]').checked;
+            const fgChecked = document.querySelector('input[value="facebook_group"]').checked;
+            document.getElementById('facebookSection').classList.toggle('visible', fpChecked || fgChecked);
         }
 
         // File display
@@ -475,11 +570,19 @@
                 .map(cb => cb.value);
             formData.append('platforms', platforms.join(','));
 
+            // Facebook fields
+            formData.append('fb_title', document.getElementById('fbTitle').value);
+            formData.append('fb_description', document.getElementById('fbDescription').value);
+            formData.append('fb_comment', document.getElementById('fbComment').value);
+
             // YouTube fields
             formData.append('youtube_title', document.getElementById('youtubeTitle').value);
             formData.append('youtube_description', document.getElementById('youtubeDesc').value);
             formData.append('youtube_tags', document.getElementById('youtubeTags').value);
             formData.append('youtube_privacy', document.getElementById('youtubePrivacy').value);
+            formData.append('youtube_playlist', document.getElementById('youtubePlaylist').value);
+            formData.append('youtube_made_for_kids', document.getElementById('youtubeMadeForKids').checked ? 'true' : 'false');
+            formData.append('youtube_comment', document.getElementById('youtubeComment').value);
 
             // Files
             const imageFiles = document.getElementById('images').files;
@@ -527,8 +630,9 @@
             return names[p] || p;
         }
 
-        // Initialize YouTube section visibility
+        // Initialize section visibility
         updateYouTubeSection();
+        updateFacebookSection();
     </script>
 </body>
 </html>

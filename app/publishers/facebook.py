@@ -36,17 +36,44 @@ class FacebookPublisher(BasePublisher):
                 message=f"Facebook ({self.target}) не настроен. Укажите токен и ID.",
             )
 
+        fb_title = str(kwargs.get("fb_title", ""))
+        fb_description = str(kwargs.get("fb_description", ""))
+        fb_comment = str(kwargs.get("fb_comment", ""))
+
         try:
             async with httpx.AsyncClient(timeout=120) as client:
                 if video:
-                    return await self._publish_video(client, text, video, platform)
-                if images:
-                    return await self._publish_photos(client, text, images, platform)
-                return await self._publish_text(client, text, platform)
+                    result = await self._publish_video(
+                        client, text, video, platform, fb_title, fb_description,
+                    )
+                elif images:
+                    result = await self._publish_photos(client, text, images, platform)
+                else:
+                    result = await self._publish_text(client, text, platform)
+
+                if result.success and fb_comment:
+                    post_id = self._extract_post_id(result)
+                    if post_id:
+                        await self._add_comment(client, post_id, fb_comment)
+
+                return result
         except httpx.HTTPError as e:
             return PublishResult(
                 platform=platform, success=False, message=f"Ошибка HTTP: {e}"
             )
+
+    def _extract_post_id(self, result: PublishResult) -> str:
+        if result.url:
+            return result.url.rsplit("/", 1)[-1]
+        return ""
+
+    async def _add_comment(
+        self, client: httpx.AsyncClient, post_id: str, comment: str
+    ) -> None:
+        await client.post(
+            f"{GRAPH_API}/{post_id}/comments",
+            data={"message": comment, "access_token": self.access_token},
+        )
 
     async def _publish_text(
         self, client: httpx.AsyncClient, text: str, platform: str
@@ -146,14 +173,20 @@ class FacebookPublisher(BasePublisher):
         text: str,
         video: Path,
         platform: str,
+        title: str = "",
+        description: str = "",
     ) -> PublishResult:
+        data_fields: dict[str, str] = {
+            "access_token": self.access_token,
+        }
+        if title:
+            data_fields["title"] = title
+        data_fields["description"] = description or text
+
         with open(video, "rb") as f:
             resp = await client.post(
                 f"{GRAPH_API}/{self.target_id}/videos",
-                data={
-                    "description": text,
-                    "access_token": self.access_token,
-                },
+                data=data_fields,
                 files={"source": (video.name, f, "video/mp4")},
             )
         data = resp.json()
