@@ -52,7 +52,7 @@ async def publish(
     youtube_description: str = Form(""),
     youtube_tags: str = Form(""),
     youtube_privacy: str = Form("public"),
-    images: list[UploadFile] = File(),  # noqa: B008
+    images: list[UploadFile] = File(default=[]),  # noqa: B008
     video: UploadFile | None = File(default=None),  # noqa: B008
 ) -> dict[str, list[PublishResult]]:
     platform_list = [p.strip() for p in platforms.split(",") if p.strip()]
