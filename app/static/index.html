@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Publisher</title>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a2e;
+            --surface2: #16213e;
+            --accent: #0f3460;
+            --primary: #e94560;
+            --text: #eee;
+            --text-muted: #999;
+            --success: #00c853;
+            --error: #ff5252;
+            --border: #333;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, var(--primary), #ff6b81);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1.1em;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .platforms {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .platform-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--surface2);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .platform-toggle:hover {
+            border-color: var(--primary);
+        }
+
+        .platform-toggle.active {
+            border-color: var(--primary);
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .platform-toggle input { display: none; }
+
+        .platform-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .icon-tg { background: #0088cc; }
+        .icon-fb { background: #1877f2; }
+        .icon-yt { background: #ff0000; }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .status-dot.configured { background: var(--success); }
+        .status-dot.not-configured { background: var(--error); }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 14px;
+            font-size: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .file-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .file-zone:hover {
+            border-color: var(--primary);
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        .file-zone input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-zone .label {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .file-zone .label strong {
+            color: var(--primary);
+        }
+
+        .file-list {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .file-list span {
+            display: inline-block;
+            background: var(--surface2);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin: 3px 3px 0 0;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .btn-publish {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), #c0392b);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-publish:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-publish:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--surface2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--border);
+        }
+
+        .result-item.success { border-left-color: var(--success); }
+        .result-item.error { border-left-color: var(--error); }
+
+        .result-item .platform-name {
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .result-item .message {
+            flex: 1;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .result-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .result-item a:hover { text-decoration: underline; }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .youtube-section {
+            display: none;
+        }
+
+        .youtube-section.visible {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .row { grid-template-columns: 1fr; }
+            .platforms { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Social Publisher</h1>
+            <p>Публикуйте контент одновременно в Telegram, Facebook и YouTube</p>
+        </header>
+
+        <form id="publishForm">
+            <!-- Platforms -->
+            <div class="card">
+                <h2>Платформы</h2>
+                <div class="platforms" id="platforms">
+                    <label class="platform-toggle active">
+                        <input type="checkbox" name="platform" value="telegram" checked>
+                        <span class="platform-icon icon-tg">TG</span>
+                        <span>Telegram</span>
+                        <span class="status-dot not-configured" id="status-telegram"></span>
+                    </label>
+                    <label class="platform-toggle active">
+                        <input type="checkbox" name="platform" value="facebook_page" checked>
+                        <span class="platform-icon icon-fb">FP</span>
+                        <span>FB Страница</span>
+                        <span class="status-dot not-configured" id="status-facebook_page"></span>
+                    </label>
+                    <label class="platform-toggle active">
+                        <input type="checkbox" name="platform" value="facebook_group" checked>
+                        <span class="platform-icon icon-fb">FG</span>
+                        <span>FB Группа</span>
+                        <span class="status-dot not-configured" id="status-facebook_group"></span>
+                    </label>
+                    <label class="platform-toggle active">
+                        <input type="checkbox" name="platform" value="youtube" checked>
+                        <span class="platform-icon icon-yt">YT</span>
+                        <span>YouTube</span>
+                        <span class="status-dot not-configured" id="status-youtube"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Text -->
+            <div class="card">
+                <h2>Текст публикации</h2>
+                <div class="form-group">
+                    <textarea id="text" name="text" placeholder="Введите текст поста..."></textarea>
+                </div>
+            </div>
+
+            <!-- Files -->
+            <div class="card">
+                <h2>Медиафайлы</h2>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Изображения</label>
+                        <div class="file-zone" id="imageZone">
+                            <input type="file" id="images" name="images" multiple accept="image/*">
+                            <div class="label">Перетащите или <strong>выберите</strong> фото</div>
+                            <div class="file-list" id="imageList"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Видео</label>
+                        <div class="file-zone" id="videoZone">
+                            <input type="file" id="video" name="video" accept="video/*">
+                            <div class="label">Перетащите или <strong>выберите</strong> видео</div>
+                            <div class="file-list" id="videoList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YouTube settings -->
+            <div class="card youtube-section" id="youtubeSection">
+                <h2>Настройки YouTube</h2>
+                <div class="form-group">
+                    <label>Название видео</label>
+                    <input type="text" id="youtubeTitle" name="youtube_title" placeholder="Название для YouTube">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="youtubeDesc" name="youtube_description" placeholder="Описание видео (если пусто — используется текст поста)" style="min-height:60px"></textarea>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Теги (через запятую)</label>
+                        <input type="text" id="youtubeTags" name="youtube_tags" placeholder="тег1, тег2, тег3">
+                    </div>
+                    <div class="form-group">
+                        <label>Приватность</label>
+                        <select id="youtubePrivacy" name="youtube_privacy">
+                            <option value="public">Публичное</option>
+                            <option value="unlisted">По ссылке</option>
+                            <option value="private">Приватное</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-publish" id="publishBtn">
+                Опубликовать
+            </button>
+        </form>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        // Platform toggles
+        document.querySelectorAll('.platform-toggle').forEach(el => {
+            const cb = el.querySelector('input');
+            el.addEventListener('click', e => {
+                if (e.target === cb) return;
+                cb.checked = !cb.checked;
+                el.classList.toggle('active', cb.checked);
+                updateYouTubeSection();
+            });
+            cb.addEventListener('change', () => {
+                el.classList.toggle('active', cb.checked);
+                updateYouTubeSection();
+            });
+        });
+
+        function updateYouTubeSection() {
+            const ytChecked = document.querySelector('input[value="youtube"]').checked;
+            document.getElementById('youtubeSection').classList.toggle('visible', ytChecked);
+        }
+
+        // File display
+        document.getElementById('images').addEventListener('change', function() {
+            const list = document.getElementById('imageList');
+            list.innerHTML = Array.from(this.files).map(f =>
+                `<span>${f.name}</span>`
+            ).join('');
+        });
+
+        document.getElementById('video').addEventListener('change', function() {
+            const list = document.getElementById('videoList');
+            list.innerHTML = this.files[0] ? `<span>${this.files[0].name}</span>` : '';
+        });
+
+        // Load status
+        async function loadStatus() {
+            try {
+                const resp = await fetch('/api/status');
+                const data = await resp.json();
+                for (const [platform, configured] of Object.entries(data.platforms)) {
+                    const dot = document.getElementById(`status-${platform}`);
+                    if (dot) {
+                        dot.classList.toggle('configured', configured);
+                        dot.classList.toggle('not-configured', !configured);
+                        dot.title = configured ? 'Настроено' : 'Не настроено';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load status:', e);
+            }
+        }
+        loadStatus();
+
+        // Publish
+        document.getElementById('publishForm').addEventListener('submit', async e => {
+            e.preventDefault();
+
+            const btn = document.getElementById('publishBtn');
+            const resultsDiv = document.getElementById('results');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Публикация...';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('text', document.getElementById('text').value);
+
+            const platforms = Array.from(document.querySelectorAll('input[name="platform"]:checked'))
+                .map(cb => cb.value);
+            formData.append('platforms', platforms.join(','));
+
+            // YouTube fields
+            formData.append('youtube_title', document.getElementById('youtubeTitle').value);
+            formData.append('youtube_description', document.getElementById('youtubeDesc').value);
+            formData.append('youtube_tags', document.getElementById('youtubeTags').value);
+            formData.append('youtube_privacy', document.getElementById('youtubePrivacy').value);
+
+            // Files
+            const imageFiles = document.getElementById('images').files;
+            for (let i = 0; i < imageFiles.length; i++) {
+                formData.append('images', imageFiles[i]);
+            }
+
+            const videoFile = document.getElementById('video').files[0];
+            if (videoFile) {
+                formData.append('video', videoFile);
+            }
+
+            try {
+                const resp = await fetch('/api/publish', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await resp.json();
+
+                resultsDiv.innerHTML = '<h2 style="margin-bottom:12px;">Результаты</h2>' +
+                    data.results.map(r => `
+                        <div class="result-item ${r.success ? 'success' : 'error'}">
+                            <span class="platform-name">${formatPlatform(r.platform)}</span>
+                            <span class="message">${r.message}</span>
+                            ${r.url ? `<a href="${r.url}" target="_blank">Открыть</a>` : ''}
+                        </div>
+                    `).join('');
+            } catch (err) {
+                resultsDiv.innerHTML = `<div class="result-item error">
+                    <span class="message">Ошибка сети: ${err.message}</span>
+                </div>`;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Опубликовать';
+        });
+
+        function formatPlatform(p) {
+            const names = {
+                telegram: 'Telegram',
+                facebook_page: 'FB Страница',
+                facebook_group: 'FB Группа',
+                youtube: 'YouTube',
+            };
+            return names[p] || p;
+        }
+
+        // Initialize YouTube section visibility
+        updateYouTubeSection();
+    </script>
+</body>
+</html>
